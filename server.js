@@ -15,8 +15,10 @@ const privateMessages = new Map(); // userId_userId -> [messages]
 const MAX_HISTORY = 200;
 const MAX_PRIVATE_HISTORY = 100;
 
-// Раздаём статические файлы
-app.use(express.static(path.join(__dirname, 'public')));
+// Отдаём index.html из корня проекта
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // WebSocket обработка
 wss.on('connection', (ws) => {
@@ -201,7 +203,7 @@ wss.on('connection', (ws) => {
       type: 'userTyping',
       userId: user.id,
       userName: user.name
-    }, ws); // исключаем отправителя
+    }, ws);
   }
   
   function broadcastUserLeft(user) {
