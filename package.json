@@ -1,7 +1,7 @@
 {
   "name": "live-chat",
-  "version": "1.0.0",
-  "description": "Онлайн чат для живого общения",
+  "version": "2.0.0",
+  "description": "Онлайн чат с публичными и приватными сообщениями",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
