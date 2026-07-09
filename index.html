@@ -566,7 +566,6 @@
             if (this.currentChat === 'public') {
               this.addMessage(data.message);
             } else {
-              // Показываем уведомление о новом сообщении в общем чате
               this.addSystemMessage(`💬 Новое сообщение в общем чате`);
             }
             break;
@@ -609,11 +608,9 @@
       }
 
       handlePrivateMessage(msg) {
-        // Если мы в чате с этим пользователем - показываем сообщение
         if (this.currentChat === msg.fromUserId || this.currentChat === msg.toUserId) {
           this.addMessage(msg);
         } else {
-          // Иначе показываем уведомление
           const senderName = msg.fromUserId === this.userId ? msg.toUserName : msg.fromUserName;
           this.privateUnread.add(msg.fromUserId === this.userId ? msg.toUserId : msg.fromUserId);
           this.updateUsersList();
@@ -676,7 +673,6 @@
         wrapper.appendChild(content);
         container.appendChild(wrapper);
         
-        // Автопрокрутка
         container.scrollTop = container.scrollHeight;
       }
 
@@ -691,16 +687,12 @@
 
       updateOnlineUsers(users, count) {
         this.onlineUsers = users;
-        
-        // Обновляем счётчик в сайдбаре
         document.getElementById('sidebarOnlineCount').textContent = count;
-        
         this.updateUsersList();
       }
 
       updateUsersList() {
         const usersList = document.getElementById('usersList');
-        const currentUser = this.onlineUsers.find(u => u.id === this.userId);
         
         usersList.innerHTML = this.onlineUsers.map(user => {
           const isMe = user.id === this.userId;
@@ -720,7 +712,6 @@
           `;
         }).join('');
         
-        // Добавляем обработчики клика
         usersList.querySelectorAll('.user-item').forEach(item => {
           item.addEventListener('click', () => {
             const userId = item.dataset.userId;
@@ -738,10 +729,8 @@
         this.currentChat = userId;
         this.currentChatUserName = user.name;
         
-        // Убираем отметку о непрочитанных
         this.privateUnread.delete(userId);
         
-        // Обновляем интерфейс
         document.getElementById('chatTitle').textContent = `🔒 ${user.name}`;
         document.getElementById('chatSubtitle').textContent = 'Приватный чат';
         document.getElementById('privateBadge').style.display = 'inline-block';
@@ -753,20 +742,17 @@
         input.classList.add('private-input');
         input.placeholder = `Написать ${user.name}...`;
         
-        // Обновляем выделение в списке
         document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
         const userEl = document.querySelector(`[data-user-id="${userId}"]`);
         if (userEl) userEl.classList.add('active');
         
         document.getElementById('publicChatBtn').classList.remove('active-chat');
         
-        // Загружаем историю приватных сообщений
         this.sendWS({
           type: 'getPrivateHistory',
           withUserId: userId
         });
         
-        // Обновляем список пользователей
         this.updateUsersList();
       }
 
@@ -788,7 +774,6 @@
         document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
         document.getElementById('publicChatBtn').classList.add('active-chat');
         
-        // Показываем общие сообщения
         const container = document.getElementById('messagesContainer');
         container.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>Общий чат</p></div>';
         
@@ -801,7 +786,6 @@
         const publicChatBtn = document.getElementById('publicChatBtn');
         const nameBtn = document.getElementById('nameBtn');
         
-        // Отправка сообщения
         sendBtn.addEventListener('click', () => this.sendMessage());
         
         input.addEventListener('keypress', (e) => {
@@ -811,7 +795,6 @@
           }
         });
         
-        // Статус "печатает"
         let typingTimer;
         input.addEventListener('input', () => {
           if (this.currentChat === 'public') {
@@ -827,16 +810,13 @@
           typingTimer = setTimeout(() => {}, 1000);
         });
         
-        // Авто-высота textarea
         input.addEventListener('input', () => {
           input.style.height = 'auto';
           input.style.height = input.scrollHeight + 'px';
         });
         
-        // Кнопка общего чата
         publicChatBtn.addEventListener('click', () => this.openPublicChat());
         
-        // Смена имени
         nameBtn.addEventListener('click', () => {
           const newName = prompt('Введите новое имя:', this.userName);
           if (newName && newName.trim()) {
