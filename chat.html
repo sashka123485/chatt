@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Chat - Публичные и приватные сообщения</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1119;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 800px;
+      height: 100vh;
+      max-height: 800px;
+      background: #1a1d28;
+      display: flex;
+      box-shadow: 0 0 60px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .sidebar {
+      width: 250px;
+      background: #15171f;
+      border-right: 1px solid #2a2d3a;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #2a2d3a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-title {
+      color: #9ca3af;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .online-count-sidebar {
+      background: #22c55e20;
+      color: #22c55e;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .users-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 2px;
+      color: #d1d5db;
+    }
+
+    .user-item:hover {
+      background: #1e2130;
+    }
+
+    .user-item.active {
+      background: #6366f120;
+      border: 1px solid #6366f140;
+    }
+
+    .user-item.current-user {
+      opacity: 0.7;
+      cursor: default;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-name {
+      font-weight: 500;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-status {
+      font-size: 0.7rem;
+      color: #22c55e;
+    }
+
+    .public-chat-btn {
+      padding: 10px 12px;
+      margin: 4px 8px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+
+    .public-chat-btn:hover {
+      background: #5558e6;
+    }
+
+    .public-chat-btn.active-chat {
+      background: #22c55e;
+    }
+
+    .main-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, #1e2130, #252836);
+      padding: 16px 20px;
+      border-bottom: 1px solid #2a2d3a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chat-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #e4e6f0;
+    }
+
+    .chat-subtitle {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    .private-badge {
+      background: #8b5cf620;
+      color: #8b5cf6;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .user-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      background: #2a2d3a;
+      border: none;
+      color: #9ca3af;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 1.1rem;
+    }
+
+    .btn-icon:hover {
+      background: #363b4a;
+      color: #e4e6f0;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message-wrapper {
+      display: flex;
+      gap: 10px;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    .message-wrapper.own {
+      flex-direction: row-reverse;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .own .avatar {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+    }
+
+    .message-content {
+      max-width: 70%;
+    }
+
+    .message-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .username {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #6366f1;
+    }
+
+    .own .username {
+      color: #f59e0b;
+    }
+
+    .time {
+      font-size: 0.7rem;
+      color: #6b7280;
+    }
+
+    .message-bubble {
+      background: #252836;
+      padding: 10px 14px;
+      border-radius: 16px 16px 16px 4px;
+      color: #d1d5db;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .own .message-bubble {
+      background: #6366f120;
+      border: 1px solid #6366f140;
+      border-radius: 16px 16px 4px 16px;
+    }
+
+    .private-message .message-bubble {
+      background: #8b5cf620;
+      border: 1px solid #8b5cf640;
+    }
+
+    .private-message.own .message-bubble {
+      background: #8b5cf630;
+      border: 1px solid #8b5cf650;
+    }
+
+    .private-label {
+      font-size: 0.65rem;
+      color: #8b5cf6;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .system-message {
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.8rem;
+      padding: 8px;
+      font-style: italic;
+    }
+
+    .input-area {
+      padding: 16px 20px;
+      background: #1e2130;
+      border-top: 1px solid #2a2d3a;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .message-input {
+      flex: 1;
+      background: #252836;
+      border: 1px solid #363b4a;
+      border-radius: 16px;
+      padding: 12px 16px;
+      color: #e4e6f0;
+      font-size: 0.95rem;
+      resize: none;
+      outline: none;
+      max-height: 100px;
+      font-family: inherit;
+      transition: 0.2s;
+    }
+
+    .message-input:focus {
+      border-color: #6366f1;
+    }
+
+    .private-input:focus {
+      border-color: #8b5cf6;
+    }
+
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      background: #6366f1;
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: 0.2s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover {
+      background: #5558e6;
+      transform: scale(1.02);
+    }
+
+    .send-btn:active {
+      transform: scale(0.95);
+    }
+
+    .send-btn.private-send {
+      background: #8b5cf6;
+    }
+
+    .send-btn.private-send:hover {
+      background: #7c3aed;
+    }
+
+    .typing-indicator {
+      color: #6b7280;
+      font-size: 0.8rem;
+      padding: 4px 20px;
+      font-style: italic;
+      min-height: 24px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #6b7280;
+      padding: 40px 20px;
+    }
+
+    .empty-state .icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .new-message-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      margin-left: auto;
+    }
+
+    @media (max-width: 600px) {
+      .sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Сайдбар с пользователями -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Пользователи</span>
+        <span class="online-count-sidebar" id="sidebarOnlineCount">0</span>
+      </div>
+      
+      <button class="public-chat-btn active-chat" id="publicChatBtn">
+        💬 Общий чат
+      </button>
+      
+      <div class="users-list" id="usersList">
+        <!-- Пользователи будут здесь -->
+      </div>
+    </div>
+
+    <!-- Основной чат -->
+    <div class="main-chat">
+      <div class="chat-header">
+        <div class="chat-info">
+          <span class="chat-title" id="chatTitle">💬 Общий чат</span>
+          <span class="chat-subtitle" id="chatSubtitle"></span>
+          <span class="private-badge" id="privateBadge" style="display: none;">ЛС</span>
+        </div>
+        <div class="user-controls">
+          <button class="btn-icon" id="nameBtn" title="Сменить имя">✏️</button>
+        </div>
+      </div>
+
+      <div class="messages" id="messagesContainer">
+        <div class="empty-state">
+          <div class="icon">💬</div>
+          <p>Выберите чат или напишите в общий</p>
+        </div>
+      </div>
+
+      <div class="typing-indicator" id="typingIndicator"></div>
+
+      <div class="input-area">
+        <textarea 
+          class="message-input" 
+          id="messageInput" 
+          placeholder="Напишите сообщение..." 
+          rows="1"
+          maxlength="1000"
+        ></textarea>
+        <button class="send-btn" id="sendBtn">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    class ChatApp {
+      constructor() {
+        this.ws = null;
+        this.userId = null;
+        this.userName = 'Гость';
+        this.currentChat = 'public'; // 'public' или userId для ЛС
+        this.currentChatUserName = null;
+        this.onlineUsers = [];
+        this.privateUnread = new Set();
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 10;
+        this.typingTimeout = null;
+        
+        this.init();
+      }
+
+      init() {
+        this.setupWebSocket();
+        this.setupEventListeners();
+        this.loadUserName();
+        this.promptUserName();
+      }
+
+      promptUserName() {
+        setTimeout(() => {
+          const saved = localStorage.getItem('chat_username');
+          if (!saved || saved === 'Гость') {
+            const name = prompt('Введите ваше имя:', 'Гость');
+            if (name && name.trim()) {
+              this.userName = name.trim().substring(0, 30);
+              this.saveUserName();
+              if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.sendWS({ type: 'setName', name: this.userName });
+              }
+            }
+          }
+        }, 500);
+      }
+
+      setupWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}`;
+        
+        this.ws = new WebSocket(wsUrl);
+
+        this.ws.onopen = () => {
+          console.log('Подключено к серверу');
+          this.reconnectAttempts = 0;
+          this.addSystemMessage('✅ Подключено к чату');
+          
+          if (this.userName && this.userName !== 'Гость') {
+            this.sendWS({ type: 'setName', name: this.userName });
+          }
+        };
+
+        this.ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            this.handleMessage(data);
+          } catch (error) {
+            console.error('Ошибка парсинга:', error);
+          }
+        };
+
+        this.ws.onclose = () => {
+          console.log('Отключено от сервера');
+          this.addSystemMessage('❌ Соединение потеряно. Переподключение...');
+          this.reconnect();
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('WebSocket ошибка:', error);
+        };
+      }
+
+      handleMessage(data) {
+        switch(data.type) {
+          case 'init':
+            this.userId = data.userId;
+            if (data.messages && data.messages.length > 0) {
+              data.messages.forEach(msg => this.addMessage(msg));
+            }
+            break;
+
+          case 'newMessage':
+            if (this.currentChat === 'public') {
+              this.addMessage(data.message);
+            } else {
+              // Показываем уведомление о новом сообщении в общем чате
+              this.addSystemMessage(`💬 Новое сообщение в общем чате`);
+            }
+            break;
+
+          case 'privateMessage':
+            this.handlePrivateMessage(data.message);
+            break;
+
+          case 'privateHistory':
+            this.loadPrivateHistory(data.messages);
+            break;
+
+          case 'onlineUsers':
+            this.updateOnlineUsers(data.users, data.count);
+            break;
+
+          case 'userRenamed':
+            this.addSystemMessage(`${data.oldName} сменил имя на ${data.newName}`);
+            break;
+
+          case 'userLeft':
+            this.addSystemMessage(`${data.userName} покинул чат`);
+            break;
+
+          case 'userTyping':
+            if (this.currentChat === 'public') {
+              this.showTyping(data.userName);
+            }
+            break;
+
+          case 'privateTyping':
+            if (this.currentChat === data.fromUserId) {
+              this.showTyping(data.fromUserName);
+            }
+            break;
+
+          default:
+            console.log('Неизвестный тип:', data.type);
+        }
+      }
+
+      handlePrivateMessage(msg) {
+        // Если мы в чате с этим пользователем - показываем сообщение
+        if (this.currentChat === msg.fromUserId || this.currentChat === msg.toUserId) {
+          this.addMessage(msg);
+        } else {
+          // Иначе показываем уведомление
+          const senderName = msg.fromUserId === this.userId ? msg.toUserName : msg.fromUserName;
+          this.privateUnread.add(msg.fromUserId === this.userId ? msg.toUserId : msg.fromUserId);
+          this.updateUsersList();
+          this.addSystemMessage(`📩 Новое личное сообщение от ${senderName}`);
+        }
+      }
+
+      loadPrivateHistory(messages) {
+        const container = document.getElementById('messagesContainer');
+        container.innerHTML = '';
+        
+        if (messages.length === 0) {
+          container.innerHTML = '<div class="empty-state"><div class="icon">🔒</div><p>Приватный чат. Сообщения видны только вам двоим.</p></div>';
+        } else {
+          messages.forEach(msg => this.addMessage(msg));
+        }
+      }
+
+      addMessage(msg) {
+        const container = document.getElementById('messagesContainer');
+        const isOwn = msg.userId === this.userId || msg.fromUserId === this.userId;
+        const isPrivate = msg.type === 'private';
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = `message-wrapper ${isOwn ? 'own' : ''} ${isPrivate ? 'private-message' : ''}`;
+        
+        const userName = msg.userName || msg.fromUserName;
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = userName.charAt(0).toUpperCase();
+        
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        
+        const time = new Date(msg.timestamp).toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        if (isPrivate) {
+          content.innerHTML = `
+            <div class="private-label">🔒 Личное сообщение</div>
+            <div class="message-header">
+              <span class="username">${this.escapeHtml(userName)}</span>
+              <span class="time">${time}</span>
+            </div>
+            <div class="message-bubble">${this.escapeHtml(msg.text)}</div>
+          `;
+        } else {
+          content.innerHTML = `
+            <div class="message-header">
+              <span class="username">${this.escapeHtml(userName)}</span>
+              <span class="time">${time}</span>
+            </div>
+            <div class="message-bubble">${this.escapeHtml(msg.text)}</div>
+          `;
+        }
+        
+        wrapper.appendChild(avatar);
+        wrapper.appendChild(content);
+        container.appendChild(wrapper);
+        
+        // Автопрокрутка
+        container.scrollTop = container.scrollHeight;
+      }
+
+      addSystemMessage(text) {
+        const container = document.getElementById('messagesContainer');
+        const div = document.createElement('div');
+        div.className = 'system-message';
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+      }
+
+      updateOnlineUsers(users, count) {
+        this.onlineUsers = users;
+        
+        // Обновляем счётчик в сайдбаре
+        document.getElementById('sidebarOnlineCount').textContent = count;
+        
+        this.updateUsersList();
+      }
+
+      updateUsersList() {
+        const usersList = document.getElementById('usersList');
+        const currentUser = this.onlineUsers.find(u => u.id === this.userId);
+        
+        usersList.innerHTML = this.onlineUsers.map(user => {
+          const isMe = user.id === this.userId;
+          const isActive = this.currentChat === user.id;
+          const hasUnread = this.privateUnread.has(user.id);
+          
+          return `
+            <div class="user-item ${isActive ? 'active' : ''} ${isMe ? 'current-user' : ''}" 
+                 data-user-id="${user.id}">
+              <div class="user-avatar">${user.name.charAt(0).toUpperCase()}</div>
+              <div class="user-info">
+                <div class="user-name">${this.escapeHtml(user.name)} ${isMe ? '(вы)' : ''}</div>
+                <div class="user-status">● В сети</div>
+              </div>
+              ${hasUnread ? '<div class="new-message-dot"></div>' : ''}
+            </div>
+          `;
+        }).join('');
+        
+        // Добавляем обработчики клика
+        usersList.querySelectorAll('.user-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const userId = item.dataset.userId;
+            if (userId && userId !== this.userId) {
+              this.openPrivateChat(userId);
+            }
+          });
+        });
+      }
+
+      openPrivateChat(userId) {
+        const user = this.onlineUsers.find(u => u.id === userId);
+        if (!user) return;
+        
+        this.currentChat = userId;
+        this.currentChatUserName = user.name;
+        
+        // Убираем отметку о непрочитанных
+        this.privateUnread.delete(userId);
+        
+        // Обновляем интерфейс
+        document.getElementById('chatTitle').textContent = `🔒 ${user.name}`;
+        document.getElementById('chatSubtitle').textContent = 'Приватный чат';
+        document.getElementById('privateBadge').style.display = 'inline-block';
+        
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.classList.add('private-send');
+        
+        const input = document.getElementById('messageInput');
+        input.classList.add('private-input');
+        input.placeholder = `Написать ${user.name}...`;
+        
+        // Обновляем выделение в списке
+        document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
+        const userEl = document.querySelector(`[data-user-id="${userId}"]`);
+        if (userEl) userEl.classList.add('active');
+        
+        document.getElementById('publicChatBtn').classList.remove('active-chat');
+        
+        // Загружаем историю приватных сообщений
+        this.sendWS({
+          type: 'getPrivateHistory',
+          withUserId: userId
+        });
+        
+        // Обновляем список пользователей
+        this.updateUsersList();
+      }
+
+      openPublicChat() {
+        this.currentChat = 'public';
+        this.currentChatUserName = null;
+        
+        document.getElementById('chatTitle').textContent = '💬 Общий чат';
+        document.getElementById('chatSubtitle').textContent = '';
+        document.getElementById('privateBadge').style.display = 'none';
+        
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.classList.remove('private-send');
+        
+        const input = document.getElementById('messageInput');
+        input.classList.remove('private-input');
+        input.placeholder = 'Напишите сообщение...';
+        
+        document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('publicChatBtn').classList.add('active-chat');
+        
+        // Показываем общие сообщения
+        const container = document.getElementById('messagesContainer');
+        container.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>Общий чат</p></div>';
+        
+        this.updateUsersList();
+      }
+
+      setupEventListeners() {
+        const sendBtn = document.getElementById('sendBtn');
+        const input = document.getElementById('messageInput');
+        const publicChatBtn = document.getElementById('publicChatBtn');
+        const nameBtn = document.getElementById('nameBtn');
+        
+        // Отправка сообщения
+        sendBtn.addEventListener('click', () => this.sendMessage());
+        
+        input.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            this.sendMessage();
+          }
+        });
+        
+        // Статус "печатает"
+        let typingTimer;
+        input.addEventListener('input', () => {
+          if (this.currentChat === 'public') {
+            this.sendWS({ type: 'typing' });
+          } else {
+            this.sendWS({ 
+              type: 'privateTyping', 
+              toUserId: this.currentChat 
+            });
+          }
+          
+          clearTimeout(typingTimer);
+          typingTimer = setTimeout(() => {}, 1000);
+        });
+        
+        // Авто-высота textarea
+        input.addEventListener('input', () => {
+          input.style.height = 'auto';
+          input.style.height = input.scrollHeight + 'px';
+        });
+        
+        // Кнопка общего чата
+        publicChatBtn.addEventListener('click', () => this.openPublicChat());
+        
+        // Смена имени
+        nameBtn.addEventListener('click', () => {
+          const newName = prompt('Введите новое имя:', this.userName);
+          if (newName && newName.trim()) {
+            this.userName = newName.trim().substring(0, 30);
+            this.saveUserName();
+            this.sendWS({ type: 'setName', name: this.userName });
+          }
+        });
+      }
+
+      sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        
+        if (!text) return;
+        
+        if (this.currentChat === 'public') {
+          this.sendWS({
+            type: 'message',
+            text: text
+          });
+        } else {
+          this.sendWS({
+            type: 'privateMessage',
+            toUserId: this.currentChat,
+            text: text
+          });
+        }
+        
+        input.value = '';
+        input.style.height = 'auto';
+        input.focus();
+      }
+
+      sendWS(data) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify(data));
+        }
+      }
+
+      showTyping(userName) {
+        const indicator = document.getElementById('typingIndicator');
+        indicator.textContent = `${userName} печатает...`;
+        
+        clearTimeout(this.typingTimeout);
+        this.typingTimeout = setTimeout(() => {
+          indicator.textContent = '';
+        }, 2000);
+      }
+
+      reconnect() {
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+          
+          setTimeout(() => {
+            console.log(`Попытка переподключения ${this.reconnectAttempts}...`);
+            this.setupWebSocket();
+          }, delay);
+        }
+      }
+
+      loadUserName() {
+        const saved = localStorage.getItem('chat_username');
+        if (saved) {
+          this.userName = saved;
+        }
+      }
+
+      saveUserName() {
+        localStorage.setItem('chat_username', this.userName);
+      }
+
+      escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+    }
+
+    // Запуск приложения
+    const app = new ChatApp();
+  </script>
+</body>
+</html>
